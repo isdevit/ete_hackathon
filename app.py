@@ -11,6 +11,9 @@ from nltk import pos_tag, ne_chunk
 from wordcloud import WordCloud
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import os
+import base64
+import plotly.express as px
+import plotly.graph_objects as go
 
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
@@ -21,6 +24,35 @@ nltk.download('words')
 # Set page configuration
 st.set_page_config(page_title="APP HACKATHON 2025", layout="wide")
 
+def set_background(image_path):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    
+    page_bg_img = f"""
+    <style>
+    .stApp, .stSidebar {{
+        background-image: url("data:image/png;base64,{encoded_string}");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    </style>
+    """
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+set_background("back.jpg")  # Provide the correct path to your image
+
+st.markdown(
+    """
+    <style>
+    .big-font { font-size:40px !important; font-weight: bold; text-align: center; }
+    .medium-font { font-size:30px !important; font-weight: bold; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 # Custom Background Video Styling
 video_path = "background.mp4"  # Ensure this file is in the working directory
 if os.path.exists(video_path):
@@ -28,6 +60,17 @@ if os.path.exists(video_path):
 
 # Sidebar
 st.sidebar.title("APP HACKATHON 2025 Dashboard")
+st.sidebar.write(
+    """
+    - Welcome to the Hackathon Analysis Dashboard!
+    - Gain deep insights into participant trends and feedback analysis.
+    - Visualize data across various domains, states, and colleges.
+    - Generate word clouds to analyze participant sentiments.
+    - Upload and process images related to hackathon events.
+    - Fully interactive and user-friendly with dark-themed aesthetics.
+    - Supports 400 participants over 3 days in 5 hackathon domains.
+    """
+)
 
 # Dataset Generation
 def generate_dataset():
@@ -60,6 +103,10 @@ def generate_dataset():
 if st.sidebar.button("Generate Dataset"):
     generate_dataset()
 
+
+st.markdown('<p class="big-font">Hackathon Participants Analysis 🪙</p>', unsafe_allow_html=True)
+st.subheader("Explore the dataset and visualizations")
+st.write("This dashboard provides insights into the participants of the hackathon, including their domains, states, colleges, and feedback.")
 # Load dataset
 try:
     df = pd.read_csv('hackathon_participants.csv')
@@ -74,30 +121,32 @@ visualization_options = st.sidebar.multiselect("Choose visualizations", ["Domain
 
 if visualization_options:
     st.subheader("Dataset Visualizations")
+
     for option in visualization_options:
-        fig, ax = plt.subplots(figsize=(4,2))  # Reduced size
-
         if option == "Domain Distribution":
-            sns.countplot(data=df, x="Domain", palette="viridis", ax=ax)
-            plt.xticks(rotation=45)
-            ax.set_title("Domain Distribution")  # Added title
-
+            fig = px.bar(df, x="Domain", title="Domain Distribution", color="Domain",
+                         template="plotly_white")
+        
         elif option == "Age Distribution":
-            sns.histplot(df["Age"], bins=10, kde=True, color="blue", ax=ax)
-            ax.set_title("Age Distribution")  # Added title
+            fig = px.histogram(df, x="Age", nbins=10, title="Age Distribution", 
+                               marginal="rug", color_discrete_sequence=["blue"], 
+                               template="plotly_white")
 
         elif option == "Experience vs Rating":
-            sns.scatterplot(data=df, x="Experience (Years)", y="Rating (Out of 5)", hue="Domain", palette="deep", ax=ax)
-            ax.set_title("Experience vs Rating")  # Added title
+            fig = px.scatter(df, x="Experience (Years)", y="Rating (Out of 5)", 
+                             color="Domain", title="Experience vs Rating", 
+                             size="Rating (Out of 5)", hover_data=['College'], 
+                             template="plotly_white")
 
         elif option == "Word Cloud (Feedback)":
+            from wordcloud import WordCloud
             text = " ".join(df["Feedback"].astype(str))
-            wordcloud = WordCloud(width=500, height=300, background_color='white').generate(text)
-            ax.imshow(wordcloud, interpolation='bilinear')
-            ax.axis("off")
-            ax.set_title("Feedback Word Cloud")  # Added title
+            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+            
+            fig = go.Figure(go.Image(z=wordcloud.to_array()))  # Convert to Plotly Image
+            fig.update_layout(template="plotly_white")
 
-        st.pyplot(fig)
+        st.plotly_chart(fig, use_container_width=True)  
 
 
 # Text Analysis
@@ -141,7 +190,7 @@ if uploaded_images:
     cols = st.columns(3)
     for idx, uploaded_image in enumerate(uploaded_images):
         with cols[idx % 3]:
-            st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_column_width=True)
+            st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_container_width=True)
             gallery_images.append(uploaded_image)
 
 # Image Processing
@@ -158,7 +207,7 @@ elif selected_option == "Upload New Image":
 if image_to_process:
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(image_to_process, caption="Original Image", use_column_width=True)
+        st.image(image_to_process, caption="Original Image", use_container_width=True)
     
     with col2:
         st.subheader("Adjust Image Properties")
@@ -177,4 +226,4 @@ if image_to_process:
         enhancer = ImageEnhance.Color(processed_img)
         processed_img = enhancer.enhance(saturation)
         
-        st.image(processed_img, caption="Processed Image", use_column_width=True)
+        st.image(processed_img, caption="Processed Image", use_container_width=True)
