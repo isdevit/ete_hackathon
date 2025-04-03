@@ -1,0 +1,24 @@
+# Ignore virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore Streamlit temporary files
+.streamlit/
+
+# Ignore dataset and large media files
+hackathon_participants.csv
+background.mp4
+uploads/
+gallery_images/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
