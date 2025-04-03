@@ -75,20 +75,30 @@ visualization_options = st.sidebar.multiselect("Choose visualizations", ["Domain
 if visualization_options:
     st.subheader("Dataset Visualizations")
     for option in visualization_options:
-        fig, ax = plt.subplots(figsize=(6, 3))  # Adjusted figure size
+        fig, ax = plt.subplots(figsize=(4,2))  # Reduced size
+
         if option == "Domain Distribution":
             sns.countplot(data=df, x="Domain", palette="viridis", ax=ax)
             plt.xticks(rotation=45)
+            ax.set_title("Domain Distribution")  # Added title
+
         elif option == "Age Distribution":
             sns.histplot(df["Age"], bins=10, kde=True, color="blue", ax=ax)
+            ax.set_title("Age Distribution")  # Added title
+
         elif option == "Experience vs Rating":
             sns.scatterplot(data=df, x="Experience (Years)", y="Rating (Out of 5)", hue="Domain", palette="deep", ax=ax)
+            ax.set_title("Experience vs Rating")  # Added title
+
         elif option == "Word Cloud (Feedback)":
             text = " ".join(df["Feedback"].astype(str))
-            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+            wordcloud = WordCloud(width=500, height=300, background_color='white').generate(text)
             ax.imshow(wordcloud, interpolation='bilinear')
             ax.axis("off")
+            ax.set_title("Feedback Word Cloud")  # Added title
+
         st.pyplot(fig)
+
 
 # Text Analysis
 st.sidebar.header("Text Analysis")
