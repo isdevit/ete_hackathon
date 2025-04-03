@@ -4,9 +4,19 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk import pos_tag, ne_chunk
 from wordcloud import WordCloud
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import os
+
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
 
 # Set page configuration
 st.set_page_config(page_title="APP HACKATHON 2025", layout="wide")
@@ -60,34 +70,54 @@ except FileNotFoundError:
 
 # Dataset Visualization
 st.sidebar.header("Dataset Visualization")
-visualization_option = st.sidebar.selectbox("Choose a visualization", ["None", "Domain Distribution", "Age Distribution", "Experience vs Rating", "Word Cloud (Feedback)"])
+visualization_options = st.sidebar.multiselect("Choose visualizations", ["Domain Distribution", "Age Distribution", "Experience vs Rating", "Word Cloud (Feedback)"])
 
-if visualization_option != "None":
-    st.subheader(f"{visualization_option}")
-    fig, ax = plt.subplots(figsize=(8, 4))  # Adjusted figure size
-    
-    if visualization_option == "Domain Distribution":
-        sns.countplot(data=df, x="Domain", palette="viridis", ax=ax)
-        plt.xticks(rotation=45)
-    elif visualization_option == "Age Distribution":
-        sns.histplot(df["Age"], bins=10, kde=True, color="blue", ax=ax)
-    elif visualization_option == "Experience vs Rating":
-        sns.scatterplot(data=df, x="Experience (Years)", y="Rating (Out of 5)", hue="Domain", palette="deep", ax=ax)
-    elif visualization_option == "Word Cloud (Feedback)":
-        text = " ".join(df["Feedback"].astype(str))
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-        ax.imshow(wordcloud, interpolation='bilinear')
-        ax.axis("off")
-    
-    st.pyplot(fig)
+if visualization_options:
+    st.subheader("Dataset Visualizations")
+    for option in visualization_options:
+        fig, ax = plt.subplots(figsize=(6, 3))  # Adjusted figure size
+        if option == "Domain Distribution":
+            sns.countplot(data=df, x="Domain", palette="viridis", ax=ax)
+            plt.xticks(rotation=45)
+        elif option == "Age Distribution":
+            sns.histplot(df["Age"], bins=10, kde=True, color="blue", ax=ax)
+        elif option == "Experience vs Rating":
+            sns.scatterplot(data=df, x="Experience (Years)", y="Rating (Out of 5)", hue="Domain", palette="deep", ax=ax)
+        elif option == "Word Cloud (Feedback)":
+            text = " ".join(df["Feedback"].astype(str))
+            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+            ax.imshow(wordcloud, interpolation='bilinear')
+            ax.axis("off")
+        st.pyplot(fig)
 
 # Text Analysis
 st.sidebar.header("Text Analysis")
-if st.sidebar.button("Perform Text Analysis"):
-    st.subheader("Text Analysis of Feedback")
-    word_freq = pd.Series(" ".join(df["Feedback"])).value_counts().head(10)
-    st.write("Top 10 Frequent Words in Feedback:")
-    st.write(word_freq)
+text_analysis_options = st.sidebar.multiselect("Choose text analysis methods", ["Word Frequency", "Stemming", "Lemmatization", "Named Entity Recognition"])
+
+if text_analysis_options:
+    st.subheader("Text Analysis")
+    feedback_text = " ".join(df["Feedback"].astype(str))
+    tokens = word_tokenize(feedback_text)
+    
+    for option in text_analysis_options:
+        if option == "Word Frequency":
+            word_freq = pd.Series(tokens).value_counts().head(10)
+            st.write("Top 10 Frequent Words in Feedback:")
+            st.bar_chart(word_freq)
+        elif option == "Stemming":
+            stemmer = PorterStemmer()
+            stemmed_words = [stemmer.stem(word) for word in tokens]
+            st.write("Stemming Output:")
+            st.write(" ".join(stemmed_words[:50]))
+        elif option == "Lemmatization":
+            lemmatizer = WordNetLemmatizer()
+            lemmatized_words = [lemmatizer.lemmatize(word) for word in tokens]
+            st.write("Lemmatization Output:")
+            st.write(" ".join(lemmatized_words[:50]))
+        elif option == "Named Entity Recognition":
+            ner_tree = ne_chunk(pos_tag(tokens))
+            st.write("Named Entity Recognition (NER):")
+            st.write(ner_tree)
 
 # Image Processing Section
 st.sidebar.header("Image Processing")
